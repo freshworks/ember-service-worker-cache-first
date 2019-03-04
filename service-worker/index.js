@@ -12,7 +12,7 @@ const API_CACHE_NAME = `${API_CACHE_KEY_PREFIX}-${VERSION}`;
 const ASSET_CACHE_NAME = `${ASSET_CACHE_KEY_PREFIX}-${VERSION}`;
 
 const API_PATTERN_REGEX = API_PATTERNS.map(createUrlRegEx);
-const ASSET_PATTERN_REGEX = ASSET_PATTERNS.map(createUrlRegEx);
+const ASSET_PATTERN_REGEX = ASSET_PATTERNS.map(createRegEx);
 
 const FETCH_DATA = (event, cacheName) => {
   let request = event.request;

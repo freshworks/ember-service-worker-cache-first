@@ -6,7 +6,7 @@ import {
   ASSET_CACHE_KEY_PREFIX
 } from 'ember-service-worker-cache-first/service-worker/config';
 import cleanupCaches from 'ember-service-worker/service-worker/cleanup-caches';
-import { createUrlRegEx, urlMatchesAnyPattern } from 'ember-service-worker/service-worker/url-utils';
+import { createUrlRegEx, createRegEx, urlMatchesAnyPattern } from 'ember-service-worker/service-worker/url-utils';
 
 const API_CACHE_NAME = `${API_CACHE_KEY_PREFIX}-${VERSION}`;
 const ASSET_CACHE_NAME = `${ASSET_CACHE_KEY_PREFIX}-${VERSION}`;

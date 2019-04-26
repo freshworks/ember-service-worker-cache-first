@@ -24,7 +24,9 @@ const FETCH_DATA = (event, cacheName) => {
         }
 
         return fetch(request).then((response) => {
-          cache.put(request, response.clone());
+          if(response.status == 200) {
+            cache.put(request, response.clone());
+          }
           return response;
         });
       })

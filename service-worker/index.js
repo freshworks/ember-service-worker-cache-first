@@ -6,12 +6,12 @@ import {
   ASSET_CACHE_KEY_PREFIX
 } from 'ember-service-worker-cache-first/service-worker/config';
 import cleanupCaches from 'ember-service-worker/service-worker/cleanup-caches';
-import { createUrlRegEx, createRegEx, urlMatchesAnyPattern } from 'ember-service-worker/service-worker/url-utils';
+import { createRegEx, urlMatchesAnyPattern } from 'ember-service-worker/service-worker/url-utils';
 
 const API_CACHE_NAME = `${API_CACHE_KEY_PREFIX}-${VERSION}`;
 const ASSET_CACHE_NAME = `${ASSET_CACHE_KEY_PREFIX}-${VERSION}`;
 
-const API_PATTERN_REGEX = API_PATTERNS.map(createUrlRegEx);
+const API_PATTERN_REGEX = API_PATTERNS.map(createRegEx);
 const ASSET_PATTERN_REGEX = ASSET_PATTERNS.map(createRegEx);
 
 const FETCH_DATA = (event, cacheName) => {

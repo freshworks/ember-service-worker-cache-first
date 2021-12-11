@@ -56,53 +56,53 @@ const POST_MESSAGE_TO_CLIENT = (clients, event) => {
 
 // Force fetch from sw-cache
 const CUSTOM_FETCH = (event) => {
-	console.log(`Custom sw-cache-fetch has been triggered for '${event.data.url}'`);
+  console.log(`Custom sw-cache-fetch has been triggered for '${event.data.url}'`);
 
-	let request = new Request(event.data.url, event.data.options);
-	let response = caches.open(API_CACHE_NAME).then((cache) => {
-		return cache.match(request).then((response) => {
-			if (response) {
-				return response;
+  let request = new Request(event.data.url, event.data.options);
+  let response = caches.open(API_CACHE_NAME).then((cache) => {
+    return cache.match(request).then((response) => {
+      if (response) {
+        return response;
       }
       // Fallback !
-			return fetch(request).then((response) => {
-				if (response.status == 200) {
-					cache.put(request, response.clone());
-				}
-				return response;
-			});
-		});
+      return fetch(request).then((response) => {
+        if (response.status == 200) {
+          cache.put(request, response.clone());
+        }
+        return response;
+      });
+    });
   });
   
-	response.then((res) => {
-		res = res.clone();
-		res.json().then((res) => {
-			self.clients.matchAll().then((clients) => {
-				
+  response.then((res) => {
+    res = res.clone();
+    res.json().then((res) => {
+      self.clients.matchAll().then((clients) => {
+        
         // event.data.payload --> Payload received from cache, to be sent to client
         event.data.payload = res;
 
         POST_MESSAGE_TO_CLIENT(clients, event);
-			});
-		});
-	});
+      });
+    });
+  });
 };
 
 // Force put to sw-cache
 const CUSTOM_PUT = (event) => {
-	console.log(`Custom sw-cache-put has been triggered for '${event.data.url}'`);
+  console.log(`Custom sw-cache-put has been triggered for '${event.data.url}'`);
 
   let request = new Request(event.data.url, event.data.options);
   
   // event.data.payload --> Payload to push to cache, sent from client
-	let response = new Response(event.data.payload, { status: 200, statusText: 'ok' }); // blob
+  let response = new Response(event.data.payload, { status: 200, statusText: 'ok' }); // blob
 
   caches.open(API_CACHE_NAME).then((cache) => {
     cache.put(request, response);
     self.clients.matchAll().then((clients) => {
       POST_MESSAGE_TO_CLIENT(clients, event);
-		});
-	});
+    });
+  });
 };
 
 self.addEventListener('fetch', (event) => {
@@ -128,11 +128,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('message', (event) => {
   const type = event.data.type;
 
-	if (type === 'sync') {
-		CLEAR_API_CACHE();
-	} else if (type === 'custom-fetch') {
-		CUSTOM_FETCH(event);
-	} else if (type === 'custom-put') {
-		CUSTOM_PUT(event);
-	}
+  if (type === 'sync') {
+    CLEAR_API_CACHE();
+  } else if (type === 'custom-fetch') {
+    CUSTOM_FETCH(event);
+  } else if (type === 'custom-put') {
+    CUSTOM_PUT(event);
+  }
 });

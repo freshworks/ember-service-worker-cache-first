@@ -45,19 +45,22 @@ const CLEAR_API_CACHE = () => {
 };
 
 const POST_MESSAGE_TO_CLIENT = (clients, event) => {
-  if (clients.length) {
-    // Broadcast to all clients
-    console.log('Posting message to back to all clients : ', clients);
-    clients.forEach((client, i) => {
-      console.log(`To client - ${i+1} : `, client);
-      client.postMessage(event.data);
-    });
-  } else {
-    console.log('Posting message to back client : ', event.source);
+  
+  const sourceClient = event.source;
 
-    // When clients are not directly available for some reason, fallback posting via source
-    event.source && event.source.postMessage && event.source.postMessage(event.data);
-  }
+  // 1. Post message to actual event source tab client
+	console.log(`Posting message back to source client : `, event.source);
+	sourceClient && sourceClient.postMessage(event.data);
+  
+  // 2. Posting message to other tab clients
+  if (clients.length) {
+		console.log(`Posting message to all other clients : `, clients);
+		clients.forEach((client, i) => {
+      if (client.id !== sourceClient?.id) {
+        client.postMessage(event.data);
+      }
+		});
+	}
 };
 
 // Force fetch from sw-cache

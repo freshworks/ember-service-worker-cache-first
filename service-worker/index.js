@@ -49,12 +49,12 @@ const POST_MSG_TO_ALL_CLIENTS = (clients, event) => {
   const sourceClient = event.source;
 
   // 1. Post message to actual event source tab client
-	console.log(`Posting message back to source client : `, event.source);
+	console.log(`SW:: Posting message back to source client`);
 	sourceClient && sourceClient.postMessage(event.data);
   
-  // 2. Posting message to other tab clients
-  if (clients.length) {
-		console.log(`Posting message to all other clients : `, clients);
+  // 2. Posting message to other tab clients, if required
+  if (event.data.broadcastToAllClients && clients.length) {
+		console.log(`SW:: Posting message to all other clients (${clients.length})`);
 		clients.forEach((client, i) => {
       if (client.id !== sourceClient?.id) {
         client.postMessage(event.data);
@@ -65,7 +65,7 @@ const POST_MSG_TO_ALL_CLIENTS = (clients, event) => {
 
 // Force fetch from sw-cache
 const CUSTOM_FETCH = (event) => {
-  console.log(`Custom sw-cache-fetch has been triggered for '${event.data.url}'`);
+  console.log(`SW:: Custom sw-cache-fetch has been triggered for '${event.data.url}'`);
 
   let request = new Request(event.data.url, event.data.options);
   let response = caches.open(API_CACHE_NAME).then((cache) => {
@@ -99,7 +99,7 @@ const CUSTOM_FETCH = (event) => {
 
 // Force put to sw-cache
 const CUSTOM_PUT = (event) => {
-  console.log(`Custom sw-cache-put has been triggered for '${event.data.url}'`);
+  console.log(`SW:: Custom sw-cache-put has been triggered for '${event.data.url}'`);
 
   let request = new Request(event.data.url, event.data.options);
   

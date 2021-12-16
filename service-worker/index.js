@@ -56,7 +56,7 @@ const POST_MSG_TO_ALL_CLIENTS = (clients, event) => {
   if (event.data.broadcastToAllClients && clients.length) {
 		console.log(`SW:: Posting message to all other clients (${clients.length})`);
 		clients.forEach((client, i) => {
-      if (client.id !== sourceClient?.id) {
+      if (client.id !== sourceClient.id) {
         client.postMessage(event.data);
       }
 		});

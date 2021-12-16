@@ -44,7 +44,7 @@ const CLEAR_API_CACHE = () => {
   });
 };
 
-const POST_MESSAGE_TO_CLIENT = (clients, event) => {
+const POST_MSG_TO_ALL_CLIENTS = (clients, event) => {
   
   const sourceClient = event.source;
 
@@ -91,7 +91,7 @@ const CUSTOM_FETCH = (event) => {
         // event.data.payload --> Payload received from cache, to be sent to client
         event.data.payload = res;
 
-        POST_MESSAGE_TO_CLIENT(clients, event);
+        POST_MSG_TO_ALL_CLIENTS(clients, event);
       });
     });
   });
@@ -109,7 +109,7 @@ const CUSTOM_PUT = (event) => {
   caches.open(API_CACHE_NAME).then((cache) => {
     cache.put(request, response);
     self.clients.matchAll().then((clients) => {
-      POST_MESSAGE_TO_CLIENT(clients, event);
+      POST_MSG_TO_ALL_CLIENTS(clients, event);
     });
   });
 };

@@ -47,8 +47,14 @@ const CLEAR_API_CACHE = () => {
 const POST_MESSAGE_TO_CLIENT = (clients, event) => {
   if (clients.length) {
     // Broadcast to all clients
-    clients.forEach((client) => client.postMessage(event.data));
+    console.log('Posting message to back to all clients : ', clients);
+    clients.forEach((client, i) => {
+      console.log(`To client - ${i+1} : `, client);
+      client.postMessage(event.data);
+    });
   } else {
+    console.log('Posting message to back client : ', event.source);
+
     // When clients are not directly available for some reason, fallback posting via source
     event.source && event.source.postMessage && event.source.postMessage(event.data);
   }
@@ -124,6 +130,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(cleanupCaches(ASSET_CACHE_KEY_PREFIX, ASSET_CACHE_NAME));
   event.waitUntil(cleanupCaches(API_CACHE_KEY_PREFIX, API_CACHE_NAME));
 });
+
 
 self.addEventListener('message', (event) => {
   const type = event.data.type;

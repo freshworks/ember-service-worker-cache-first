@@ -74,7 +74,7 @@ const CUSTOM_FETCH = (event) => {
         return response;
       }
       // Fallback !
-      return fetch(request).then((response) => {
+      return fetch(request, { headers: event.data.options.headers || {}}).then((response) => {
         if (response.status == 200) {
           cache.put(request, response.clone());
         }

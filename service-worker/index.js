@@ -34,15 +34,33 @@ const FETCH_DATA = (event, cacheName) => {
   );
 };
 
-const CLEAR_API_CACHE = (urlsToCacheBurst) => {
-  console.log('going to clear api cache for : ', urlsToCacheBurst);
-  caches.open(API_CACHE_NAME).then((cache) => {
-    urlsToCacheBurst.forEach((url) => {
-      cache.delete(url).then(() => {
-        console.log('deleted SW cache for url : ', url);
+const CLEAR_API_CACHE = (options, sourceClient) => {
+  console.log('going to clear api cache for : ', options.urlsToCacheBurst);//either few URLs or all URLs(locale change)
+  //if(urlsToCacheBurst){
+    caches.open(API_CACHE_NAME).then((cache) => {
+      options.urlsToCacheBurst.forEach((url) => {
+        debugger
+        cache.delete(url).then(() => {
+          console.log('deleted SW cache for url : ', url);
+          debugger
+          let request = new Request(url, options);//options has triggeredFrom - need to remove ??
+          let headers = options.headers || {};
+
+          fetch(request, { headers }).then((_response) => {
+            if(_response.status == 200) {
+              cache.put(request, _response.clone());
+
+              sourceClient.postMessage({url: url, triggeredFrom: options.triggeredFrom});
+            }
+            //return response;//todo : should add error handling here instead ?
+          })
+        });
       });
     });
-  });
+  // } else {
+  //   caches.delete(cacheName); //delete all URLs (locale change case)
+  //   console.log('deleted SW cache for all urls');
+  // }
 };
 
 const POST_MSG_TO_ALL_CLIENTS = (clients, event) => {
@@ -51,14 +69,16 @@ const POST_MSG_TO_ALL_CLIENTS = (clients, event) => {
 
   // 1. Post message to actual event source tab client
 	console.log(`SW:: Posting message back to source client`);
-	sourceClient && sourceClient.postMessage(event.data);
+  debugger
+	sourceClient && sourceClient.postMessage({data: event.data, triggeredFrom: options.triggeredFrom});
   
   // 2. Posting message to other tab clients, if required
-  if (event.data.broadcastToAllClients && clients.length) {
+  if (event.data.broadcastToAllClients && clients.length) {//todo : preethi check this
 		console.log(`SW:: Posting message to all other clients (${clients.length})`);
 		clients.forEach((client, i) => {
       if (client.id !== sourceClient.id) {
-        client.postMessage(event.data);
+        debugger
+        client.postMessage({data: event.data, triggeredFrom: options.triggeredFrom});
       }
 		});
 	}
@@ -139,9 +159,9 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('message', (event) => {
   const type = event.data.type;
 
+  console.log('npm link works');
   if (type === 'sync') {
-    const urlsToBurst = event.data.urlListToCacheBurst;
-    CLEAR_API_CACHE(urlsToBurst);
+    CLEAR_API_CACHE(event.data.options, event.source);
   } else if (type === 'custom-fetch') {
     CUSTOM_FETCH(event);
   } else if (type === 'custom-put') {

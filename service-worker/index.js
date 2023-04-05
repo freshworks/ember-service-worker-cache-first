@@ -34,12 +34,13 @@ const FETCH_DATA = (event, cacheName) => {
   );
 };
 
-const CLEAR_API_CACHE = () => {
-  caches.keys().then((cacheNames) => {
-    cacheNames.forEach((cacheName) => {
-      if (cacheName == API_CACHE_NAME) {
-        caches.delete(cacheName);
-      }
+const CLEAR_API_CACHE = (urlsToCacheBurst) => {
+  console.log('going to clear api cache for : ', urlsToCacheBurst);
+  caches.open(API_CACHE_NAME).then((cache) => {
+    urlsToCacheBurst.forEach((url) => {
+      cache.delete(url).then(() => {
+        console.log('deleted SW cache for url : ', url);
+      });
     });
   });
 };
@@ -139,7 +140,8 @@ self.addEventListener('message', (event) => {
   const type = event.data.type;
 
   if (type === 'sync') {
-    CLEAR_API_CACHE();
+    const urlsToBurst = event.data.urlListToCacheBurst;
+    CLEAR_API_CACHE(urlsToBurst);
   } else if (type === 'custom-fetch') {
     CUSTOM_FETCH(event);
   } else if (type === 'custom-put') {

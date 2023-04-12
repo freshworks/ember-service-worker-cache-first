@@ -40,7 +40,7 @@ const CLEAR_API_CACHE = (options, sourceClient) => {
     caches.open(API_CACHE_NAME).then((cache) => {
       options.urlsToCacheBurst.forEach((url) => {
         debugger
-        cache.delete(url).then(() => {
+        cache.delete(url).then(() => {//todo: check for existence
           console.log('deleted SW cache for url : ', url);
           debugger
           let request = new Request(url, options);//options has triggeredFrom - need to remove ??
@@ -50,7 +50,7 @@ const CLEAR_API_CACHE = (options, sourceClient) => {
             if(_response.status == 200) {
               cache.put(request, _response.clone());
 
-              sourceClient.postMessage({url: url, triggeredFrom: options.triggeredFrom});
+              sourceClient.postMessage({data: {url: url}, triggeredFrom: options.triggeredFrom});
             }
             //return response;//todo : should add error handling here instead ?
           })
@@ -70,7 +70,7 @@ const POST_MSG_TO_ALL_CLIENTS = (clients, event) => {
   // 1. Post message to actual event source tab client
 	console.log(`SW:: Posting message back to source client`);
   debugger
-	sourceClient && sourceClient.postMessage({data: event.data, triggeredFrom: options.triggeredFrom});
+	sourceClient && sourceClient.postMessage({data: event.data, triggeredFrom: event.data.options.triggeredFrom});
   
   // 2. Posting message to other tab clients, if required
   if (event.data.broadcastToAllClients && clients.length) {//todo : preethi check this
@@ -78,7 +78,7 @@ const POST_MSG_TO_ALL_CLIENTS = (clients, event) => {
 		clients.forEach((client, i) => {
       if (client.id !== sourceClient.id) {
         debugger
-        client.postMessage({data: event.data, triggeredFrom: options.triggeredFrom});
+        client.postMessage({data: event.data, triggeredFrom: event.data.options.triggeredFrom});
       }
 		});
 	}

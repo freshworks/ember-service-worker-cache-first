@@ -35,10 +35,10 @@ const FETCH_DATA = (event, cacheName) => {
 };
 
 const CLEAR_API_CACHE = (options, sourceClient) => {
-  console.log('going to clear api cache for : ', options.urlsToCacheBurst);//either few URLs or all URLs(locale change)
-  //if(urlsToCacheBurst){
+  console.log('going to clear api cache for : ', options.urlListToCacheReset);//either few URLs or all URLs(locale change)
+  //if(urlListToCacheReset){
     caches.open(API_CACHE_NAME).then((cache) => {
-      options.urlsToCacheBurst.forEach((url) => {
+      options.urlListToCacheReset.forEach((url) => {
         debugger
         cache.delete(url).then(() => {//todo: check for existence
           console.log('deleted SW cache for url : ', url);
@@ -52,7 +52,7 @@ const CLEAR_API_CACHE = (options, sourceClient) => {
 
               sourceClient.postMessage({data: {url: url}, triggeredFrom: options.triggeredFrom});
             }
-            //return response;//todo : should add error handling here instead ?
+            //return _response;//todo : should add error handling here instead ?
           })
         });
       });

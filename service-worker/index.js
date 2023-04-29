@@ -35,32 +35,25 @@ const FETCH_DATA = (event, cacheName) => {
 };
 
 const CLEAR_API_CACHE = (options, sourceClient) => {
-  console.log('going to clear api cache for : ', options.urlListToCacheReset);//either few URLs or all URLs(locale change)
-  //if(urlListToCacheReset){
-    caches.open(API_CACHE_NAME).then((cache) => {
-      options.urlListToCacheReset.forEach((url) => {
-        debugger
-        cache.delete(url).then(() => {//todo: check for existence
-          console.log('deleted SW cache for url : ', url);
-          debugger
-          let request = new Request(url, options);//options has triggeredFrom - need to remove ??
-          let headers = options.headers || {};
+  console.log('SW:: addon going to clear api cache for : ', options.urlListToCacheReset);
+  caches.open(API_CACHE_NAME).then((cache) => {
+    options.urlListToCacheReset.forEach((url) => {
+      cache.delete(url).then(() => {
+        console.log('SW:: deleted SW cache for url : ', url);
+        let request = new Request(url, options);//options has triggeredFrom - need to remove ??
+        let headers = options.headers || {};
 
-          fetch(request, { headers }).then((_response) => {
-            if(_response.status == 200) {
-              cache.put(request, _response.clone());
+        fetch(request, { headers }).then((_response) => {
+          if(_response.status == 200) {
+            cache.put(request, _response.clone());
 
-              sourceClient.postMessage({data: {url: url}, triggeredFrom: options.triggeredFrom});
-            }
-            //return _response;//todo : should add error handling here instead ?
-          })
-        });
+            sourceClient.postMessage({data: {url: url}, triggeredFrom: options.triggeredFrom});
+          }
+          //return _response;//todo : should add error handling here instead ?
+        })
       });
     });
-  // } else {
-  //   caches.delete(cacheName); //delete all URLs (locale change case)
-  //   console.log('deleted SW cache for all urls');
-  // }
+  });
 };
 
 const POST_MSG_TO_ALL_CLIENTS = (clients, event) => {
@@ -69,7 +62,6 @@ const POST_MSG_TO_ALL_CLIENTS = (clients, event) => {
 
   // 1. Post message to actual event source tab client
 	console.log(`SW:: Posting message back to source client`);
-  debugger
 	sourceClient && sourceClient.postMessage({data: event.data, triggeredFrom: event.data.options.triggeredFrom});
   
   // 2. Posting message to other tab clients, if required
@@ -77,7 +69,6 @@ const POST_MSG_TO_ALL_CLIENTS = (clients, event) => {
 		console.log(`SW:: Posting message to all other clients (${clients.length})`);
 		clients.forEach((client, i) => {
       if (client.id !== sourceClient.id) {
-        debugger
         client.postMessage({data: event.data, triggeredFrom: event.data.options.triggeredFrom});
       }
 		});
@@ -159,7 +150,6 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('message', (event) => {
   const type = event.data.type;
 
-  console.log('npm link works');
   if (type === 'sync') {
     CLEAR_API_CACHE(event.data.options, event.source);
   } else if (type === 'custom-fetch') {

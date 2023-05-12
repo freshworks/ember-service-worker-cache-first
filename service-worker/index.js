@@ -25,7 +25,10 @@ const FETCH_DATA = (event, cacheName) => {
 
         return fetch(request).then((response) => {
           if(response.status == 200) {
-            cache.put(request, response.clone());
+            let modifiedHeaders = new Headers([...response.headers, ['from-sw', true]]);
+            
+            let updatedResponse = new Response(response.body, {headers: modifiedHeaders});
+            cache.put(request, updatedResponse);
           }
           return response;
         });
@@ -45,7 +48,7 @@ const CLEAR_API_CACHE = (options, sourceClient) => {
 
         fetch(request, { headers }).then((_response) => {
           if(_response.status == 200) {
-            cache.put(request, _response.clone());
+            cache.put(request, clonedResp);
 
             sourceClient.postMessage({data: {url: url}, triggeredFrom: options.triggeredFrom});
           }
@@ -87,8 +90,11 @@ const CUSTOM_FETCH = (event) => {
       }
       // Fallback !
       return fetch(request, { headers: event.data.options.headers || {}}).then((response) => {
-        if (response.status == 200) {
-          cache.put(request, response.clone());
+        if(response.status == 200) {
+          let modifiedHeaders = new Headers([...response.headers, ['from-sw', true]]);
+          
+          let updatedResponse = new Response(response.body, {headers: modifiedHeaders});
+          cache.put(request, updatedResponse);
         }
         return response;
       });

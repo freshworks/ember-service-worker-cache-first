@@ -20,17 +20,21 @@ const FETCH_DATA = (event, cacheName) => {
     caches.open(cacheName).then((cache) => {
       return cache.match(request).then((response) => {
         if (response) {
+          console.log('SW::FETCH_DATA:: sw has response in cache');
           return response;
         }
-
+        console.log('SW::FETCH_DATA:: sw has no cache. Triggering a fetch call');
         return fetch(request).then((response) => {
           if(response.status == 200) {
+            console.log(`SW::FETCH_DATA:: Fetch call completed with response :${response}`);
             let modifiedHeaders = new Headers([...response.headers, ['from-sw', true]]);
-            
             let updatedResponse = new Response(response.body, {headers: modifiedHeaders});
+
+            console.log(`SW::FETCH_DATA:: triggered cache Put with modified headers => updatedResponse :${updatedResponse}`);
             cache.put(request, updatedResponse);
+
+            return updatedResponse;
           }
-          return response;
         });
       })
     })
@@ -38,21 +42,27 @@ const FETCH_DATA = (event, cacheName) => {
 };
 
 const CLEAR_API_CACHE = (options, sourceClient) => {
-  console.log('SW:: addon going to clear api cache for : ', options.urlListToCacheReset);
+  console.log('SW::CLEAR_API_CACHE:: addon going to clear api cache for APIs : ', options.urlListToCacheReset);
   caches.open(API_CACHE_NAME).then((cache) => {
     options.urlListToCacheReset.forEach((url) => {
       cache.delete(url).then(() => {
-        console.log('SW:: deleted SW cache for url : ', url);
+        console.log('SW::CLEAR_API_CACHE:: deleted SW cache for url : ', url);
         let request = new Request(url, options);//options has triggeredFrom - need to remove ??
         let headers = options.headers || {};
 
-        fetch(request, { headers }).then((_response) => {
-          if(_response.status == 200) {
-            cache.put(request, clonedResp);
+        console.log('SW::CLEAR_API_CACHE:: Fetch call trigger for url : ', url);
+        fetch(request, { headers }).then((response) => {
+          console.log(`SW::CLEAR_API_CACHE:: Fetch call completed for url :${url} with response :${response}`);
+          if(response.status == 200) {
+            let modifiedHeaders = new Headers([...response.headers, ['from-sw', true]]);
+            let updatedResponse = new Response(response.body, {headers: modifiedHeaders});
+
+            console.log(`SW::CLEAR_API_CACHE:: triggered cache Put with modified headers => updatedResponse :${updatedResponse}`);
+            cache.put(request, updatedResponse);
 
             sourceClient.postMessage({data: {url: url}, triggeredFrom: options.triggeredFrom});
           }
-          //return _response;//todo : should add error handling here instead ?
+          //todo : should add error handling here instead ?
         })
       });
     });
@@ -64,12 +74,12 @@ const POST_MSG_TO_ALL_CLIENTS = (clients, event) => {
   const sourceClient = event.source;
 
   // 1. Post message to actual event source tab client
-	console.log(`SW:: Posting message back to source client`);
+	console.log(`SW::POST_MSG_TO_ALL_CLIENTS Posting message back to source client`);
 	sourceClient && sourceClient.postMessage({data: event.data, triggeredFrom: event.data.options.triggeredFrom});
   
   // 2. Posting message to other tab clients, if required
   if (event.data.broadcastToAllClients && clients.length) {//todo : preethi check this
-		console.log(`SW:: Posting message to all other clients (${clients.length})`);
+		console.log(`SW::POST_MSG_TO_ALL_CLIENTS Posting message to all other clients (${clients.length})`);
 		clients.forEach((client, i) => {
       if (client.id !== sourceClient.id) {
         client.postMessage({data: event.data, triggeredFrom: event.data.options.triggeredFrom});
@@ -80,20 +90,24 @@ const POST_MSG_TO_ALL_CLIENTS = (clients, event) => {
 
 // Force fetch from sw-cache
 const CUSTOM_FETCH = (event) => {
-  console.log(`SW:: Custom sw-cache-fetch has been triggered for '${event.data.url}'`);
+  console.log(`SW::CUSTOM_FETCH:: Custom sw-cache-fetch has been triggered for '${event.data.url}'`);
 
   let request = new Request(event.data.url, event.data.options);
   let response = caches.open(API_CACHE_NAME).then((cache) => {
     return cache.match(request).then((response) => {
       if (response) {
+        console.log('SW::CUSTOM_FETCH:: sw has response in cache');
         return response;
       }
       // Fallback !
       return fetch(request, { headers: event.data.options.headers || {}}).then((response) => {
         if(response.status == 200) {
+          console.log(`SW::CUSTOM_FETCH:: Fetch call completed with response :${response}`);
+
           let modifiedHeaders = new Headers([...response.headers, ['from-sw', true]]);
-          
           let updatedResponse = new Response(response.body, {headers: modifiedHeaders});
+
+          console.log(`SW::CUSTOM_FETCH:: triggered cache Put with modified headers => updatedResponse :${updatedResponse}`);
           cache.put(request, updatedResponse);
         }
         return response;
@@ -101,7 +115,7 @@ const CUSTOM_FETCH = (event) => {
     });
   });
   
-  response.then((res) => {
+  response.then((res) => {//preethi : doubt here
     res = res.clone();
     res.json().then((res) => {
       self.clients.matchAll().then((clients) => {
@@ -109,7 +123,7 @@ const CUSTOM_FETCH = (event) => {
         // event.data.payload --> Payload received from cache, to be sent to client
         event.data.payload = res;
 
-        POST_MSG_TO_ALL_CLIENTS(clients, event);
+        POST_MSG_TO_ALL_CLIENTS(clients, event);//need to unit test : triggered from
       });
     });
   });
@@ -117,14 +131,17 @@ const CUSTOM_FETCH = (event) => {
 
 // Force put to sw-cache
 const CUSTOM_PUT = (event) => {
-  console.log(`SW:: Custom sw-cache-put has been triggered for '${event.data.url}'`);
+  console.log(`SW::CUSTOM_PUT:: Custom sw-cache-put has been triggered for '${event.data.url}'`);
 
   let request = new Request(event.data.url, event.data.options);
   
+  let modifiedHeaders = new Headers([...event.data.headers, ['from-sw', true]]);
+
   // event.data.payload --> Payload to push to cache, sent from client
-  let response = new Response(event.data.payload, { status: 200, statusText: 'ok' }); // blob
+  let response = new Response(event.data.payload, { status: 200, statusText: 'ok', headers: modifiedHeaders}); // blob
 
   caches.open(API_CACHE_NAME).then((cache) => {
+    console.log(`SW::CUSTOM_PUT:: triggered cache Put of request ${request} with response :${response}`);
     cache.put(request, response);
     self.clients.matchAll().then((clients) => {
       POST_MSG_TO_ALL_CLIENTS(clients, event);

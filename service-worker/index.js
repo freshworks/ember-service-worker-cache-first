@@ -41,23 +41,23 @@ const FETCH_DATA = (event, cacheName) => {
   );
 };
 
-const CLEAR_API_CACHE = (options, sourceClient) => {
-  console.log('SW::CLEAR_API_CACHE:: addon going to clear api cache for APIs : ', options.urlListToCacheReset);
+const CLEAR_AND_REFILL_API_CACHE = (options, sourceClient) => {
+  console.log('SW::CLEAR_AND_REFILL_API_CACHE:: addon going to clear api cache for APIs : ', options.urlListToCacheReset);
   caches.open(API_CACHE_NAME).then((cache) => {
     options.urlListToCacheReset.forEach((url) => {
       cache.delete(url).then(() => {
-        console.log('SW::CLEAR_API_CACHE:: deleted SW cache for url : ', url);
+        console.log('SW::CLEAR_AND_REFILL_API_CACHE:: deleted SW cache for url : ', url);
         let request = new Request(url, options);
         let headers = options.headers || {};
 
-        console.log('SW::CLEAR_API_CACHE:: Fetch call trigger for url : ', url);
+        console.log('SW::CLEAR_AND_REFILL_API_CACHE:: Fetch call trigger for url : ', url);
         fetch(request, { headers }).then((response) => {
-          console.log(`SW::CLEAR_API_CACHE:: Fetch call completed for url :${url} with response :${response}`);
+          console.log(`SW::CLEAR_AND_REFILL_API_CACHE:: Fetch call completed for url :${url} with response :${response}`);
           if(response.status == 200) {
             let modifiedHeaders = new Headers([...response.headers, ['from-sw', true]]);
             let updatedResponse = new Response(response.body, {headers: modifiedHeaders});
 
-            console.log(`SW::CLEAR_API_CACHE:: triggered cache Put with modified headers => updatedResponse :${updatedResponse}`);
+            console.log(`SW::CLEAR_AND_REFILL_API_CACHE:: triggered cache Put with modified headers => updatedResponse :${updatedResponse}`);
             cache.put(request, updatedResponse);
 
             sourceClient.postMessage({data: {url: url}, triggeredFrom: options.triggeredFrom});
@@ -122,7 +122,7 @@ const CUSTOM_FETCH = (event) => {
         // event.data.payload --> Payload received from cache, to be sent to client
         event.data.payload = res;
 
-        POST_MSG_TO_ALL_CLIENTS(clients, event);//need to unit test : triggered from
+        POST_MSG_TO_ALL_CLIENTS(clients, event);
       });
     });
   });
@@ -172,7 +172,7 @@ self.addEventListener('message', (event) => {
   const type = event.data.type;
 
   if (type === 'sync') {
-    CLEAR_API_CACHE(event.data.options, event.source);
+    CLEAR_AND_REFILL_API_CACHE(event.data.options, event.source);
   } else if (type === 'custom-fetch') {
     CUSTOM_FETCH(event);
   } else if (type === 'custom-put') {

@@ -20,17 +20,17 @@ const FETCH_DATA = (event, cacheName) => {
     caches.open(cacheName).then((cache) => {
       return cache.match(request).then((response) => {
         if (response) {
-          console.log('SW::FETCH_DATA:: SW has response in cache');
+          console.log('SW::FETCH_DATA:: SW has response in cache for : ', request.url);
           return response;
         }
-        console.log('SW::FETCH_DATA:: sw has no cache. Triggering a fetch call');
+        console.log('SW::FETCH_DATA:: sw has no cache. Triggering a fetch call for :', request.url);
         return fetch(request).then((response) => {
           if(response.status == 200) {
             let clonedResp = response.clone();
              let modifiedHeaders = new Headers([...clonedResp.headers, ['from-sw', true]]);
              let updatedResponse = new Response(clonedResp.body, {headers: modifiedHeaders});
 
-            console.log(`SW::FETCH_DATA:: triggered cache Put with modified headers => updatedResponse :${updatedResponse}`);
+            console.log(`SW::FETCH_DATA:: triggered cache Put for ${request.url} with modified headers => updatedResponse :${updatedResponse}`);
             cache.put(request, updatedResponse);
 
           }

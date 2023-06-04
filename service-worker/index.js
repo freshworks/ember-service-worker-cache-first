@@ -134,7 +134,7 @@ const CUSTOM_PUT = (event) => {
 
   let request = new Request(event.data.url, event.data.options);
   
-  let modifiedHeaders = new Headers([...event.data.headers, ['from-sw', true]]);
+  let modifiedHeaders = new Headers([...event.data.options.headers, ['from-sw', true]]);
 
   // event.data.payload --> Payload to push to cache, sent from client
   let response = new Response(event.data.payload, { status: 200, statusText: 'ok', headers: modifiedHeaders}); // blob

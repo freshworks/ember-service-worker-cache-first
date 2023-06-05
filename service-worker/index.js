@@ -45,7 +45,7 @@ const CLEAR_AND_REFILL_API_CACHE = (event) => {
   let options = event.data.options;
   let urlListToCacheReset = event.data.urlListToCacheReset || [];
   let sourceClient =  event.source;
-  console.log('SW::CLEAR_AND_REFILL_API_CACHE:: addon going to clear api cache for APIs : ', options.urlListToCacheReset);
+  console.log('SW::CLEAR_AND_REFILL_API_CACHE:: addon going to clear api cache for APIs : ', urlListToCacheReset);
   caches.open(API_CACHE_NAME).then((cache) => {
     urlListToCacheReset.forEach((url) => {
       cache.delete(url).then(() => {

@@ -41,10 +41,13 @@ const FETCH_DATA = (event, cacheName) => {
   );
 };
 
-const CLEAR_AND_REFILL_API_CACHE = (options, sourceClient) => {
+const CLEAR_AND_REFILL_API_CACHE = (event) => {
+  let options = event.data.options;
+  let urlListToCacheReset = event.data.urlListToCacheReset || [];
+  let sourceClient =  event.source;
   console.log('SW::CLEAR_AND_REFILL_API_CACHE:: addon going to clear api cache for APIs : ', options.urlListToCacheReset);
   caches.open(API_CACHE_NAME).then((cache) => {
-    options.urlListToCacheReset.forEach((url) => {
+    urlListToCacheReset.forEach((url) => {
       cache.delete(url).then(() => {
         console.log('SW::CLEAR_AND_REFILL_API_CACHE:: deleted SW cache for url : ', url);
         let request = new Request(url, options);
@@ -60,7 +63,7 @@ const CLEAR_AND_REFILL_API_CACHE = (options, sourceClient) => {
             console.log(`SW::CLEAR_AND_REFILL_API_CACHE:: triggered cache Put with modified headers => updatedResponse :${updatedResponse}`);
             cache.put(request, updatedResponse);
 
-            sourceClient.postMessage({data: {url: url}, triggeredFrom: options.triggeredFrom});
+            sourceClient.postMessage({data: {url: url}, triggeredFrom: event.data.triggeredFrom});
           }
         })
       });
@@ -74,14 +77,14 @@ const POST_MSG_TO_ALL_CLIENTS = (clients, event) => {
 
   // 1. Post message to actual event source tab client
 	console.log(`SW::POST_MSG_TO_ALL_CLIENTS Posting message back to source client`);
-	sourceClient && sourceClient.postMessage({data: event.data, triggeredFrom: event.data.options.triggeredFrom});
+	sourceClient && sourceClient.postMessage({data: event.data, triggeredFrom: event.data.triggeredFrom});
   
   // 2. Posting message to other tab clients, if required
   if (event.data.broadcastToAllClients && clients.length) {
 		console.log(`SW::POST_MSG_TO_ALL_CLIENTS Posting message to all other clients (${clients.length})`);
 		clients.forEach((client, i) => {
       if (client.id !== sourceClient.id) {
-        client.postMessage({data: event.data, triggeredFrom: event.data.options.triggeredFrom});
+        client.postMessage({data: event.data, triggeredFrom: event.data.triggeredFrom});
       }
 		});
 	}
@@ -172,7 +175,7 @@ self.addEventListener('message', (event) => {
   const type = event.data.type;
 
   if (type === 'sync') {
-    CLEAR_AND_REFILL_API_CACHE(event.data.options, event.source);
+    CLEAR_AND_REFILL_API_CACHE(event);
   } else if (type === 'custom-fetch') {
     CUSTOM_FETCH(event);
   } else if (type === 'custom-put') {

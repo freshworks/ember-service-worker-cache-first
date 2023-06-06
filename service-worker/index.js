@@ -27,12 +27,7 @@ const FETCH_DATA = (event, cacheName) => {
         return fetch(request).then((response) => {
           if(response.status == 200) {
             let clonedResp = response.clone();
-             let modifiedHeaders = new Headers([...clonedResp.headers, ['from-sw', true]]);
-             let updatedResponse = new Response(clonedResp.body, {headers: modifiedHeaders});
-
-            console.log(`SW::FETCH_DATA:: triggered cache Put for ${request.url} with modified headers => updatedResponse :${updatedResponse}`);
-            cache.put(request, updatedResponse);
-
+            CACHE_PUT_TO_SW(cache, request, clonedResp);
           }
           return response;
         });
@@ -57,11 +52,7 @@ const CLEAR_AND_REFILL_API_CACHE = (event) => {
         fetch(request, { headers }).then((response) => {
           console.log(`SW::CLEAR_AND_REFILL_API_CACHE:: Fetch call completed for url :${url} with response :${response}`);
           if(response.status == 200) {
-            let modifiedHeaders = new Headers([...response.headers, ['from-sw', true]]);
-            let updatedResponse = new Response(response.body, {headers: modifiedHeaders});
-
-            console.log(`SW::CLEAR_AND_REFILL_API_CACHE:: triggered cache Put with modified headers => updatedResponse :${updatedResponse}`);
-            cache.put(request, updatedResponse);
+            CACHE_PUT_TO_SW(cache, request, response);
 
             sourceClient.postMessage({data: {url: url}, triggeredFrom: event.data.triggeredFrom});
           }
@@ -105,12 +96,7 @@ const CUSTOM_FETCH = (event) => {
       return fetch(request, { headers: event.data.options.headers || {}}).then((response) => {
         if(response.status == 200) {
           let clonedResp = response.clone();
-
-          let modifiedHeaders = new Headers([...clonedResp.headers, ['from-sw', true]]);
-          let updatedResponse = new Response(clonedResp.body, {headers: modifiedHeaders});
-
-          console.log(`SW::CUSTOM_FETCH:: triggered cache Put with modified headers => updatedResponse :${updatedResponse}`);
-          cache.put(request, updatedResponse);
+          CACHE_PUT_TO_SW(cache, request, clonedResp);
         }
         return response;
       });
@@ -143,12 +129,21 @@ const CUSTOM_PUT = (event) => {
   let response = new Response(event.data.payload, { status: 200, statusText: 'ok', headers: modifiedHeaders}); // blob
 
   caches.open(API_CACHE_NAME).then((cache) => {
-    cache.put(request, response);
+    CACHE_PUT_TO_SW(cache, request, clonedResp);
+
     self.clients.matchAll().then((clients) => {
       POST_MSG_TO_ALL_CLIENTS(clients, event);
     });
   });
 };
+
+const CACHE_PUT_TO_SW = (cache, request, response) => {
+  let modifiedHeaders = new Headers([...response.headers, ['from-sw', true]]);
+  let updatedResponse = new Response(response.body, {headers: modifiedHeaders});
+
+  console.log(`SW::cachePutToSW:: triggered cache Put with modified headers => updatedResponse :${updatedResponse}`);
+  cache.put(request, updatedResponse);
+}
 
 self.addEventListener('fetch', (event) => {
   let request = event.request;

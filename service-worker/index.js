@@ -129,7 +129,7 @@ const CUSTOM_PUT = (event) => {
   let response = new Response(event.data.payload, { status: 200, statusText: 'ok', headers: modifiedHeaders}); // blob
 
   caches.open(API_CACHE_NAME).then((cache) => {
-    CACHE_PUT_TO_SW(cache, request, clonedResp);
+    cache.put(request, response);
 
     self.clients.matchAll().then((clients) => {
       POST_MSG_TO_ALL_CLIENTS(clients, event);

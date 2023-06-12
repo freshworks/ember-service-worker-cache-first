@@ -16,6 +16,7 @@ const ASSET_PATTERN_REGEX = ASSET_PATTERNS.map(createRegEx);
 
 const FETCH_DATA = (event, cacheName) => {
 	let request = event.request;
+
 	event.respondWith(
 		caches.open(cacheName).then((cache) => {
 			return cache.match(request).then((response) => {
@@ -26,8 +27,7 @@ const FETCH_DATA = (event, cacheName) => {
 				console.log('SW::FETCH_DATA:: sw has no cache. Triggering a fetch call for :', request.url);
 				return fetch(request).then((response) => {
 					if(response.status == 200) {
-						let clonedResp = response.clone();
-						CACHE_PUT_TO_SW(cache, request, clonedResp);
+						CACHE_PUT_TO_SW(cache, request, response.clone());
 					}
 					return response;
 				});
@@ -41,6 +41,7 @@ const CLEAR_AND_REFILL_API_CACHE = (event) => {
 	let urlListToCacheReset = event.data.urlListToCacheReset || [];
 	let sourceClient =  event.source;
 	console.log('SW::CLEAR_AND_REFILL_API_CACHE:: addon going to clear api cache for APIs : ', urlListToCacheReset);
+
 	caches.open(API_CACHE_NAME).then((cache) => {
 		urlListToCacheReset.forEach((url) => {
 			cache.delete(url).then(() => {
@@ -95,8 +96,7 @@ const CUSTOM_FETCH = (event) => {
 			// Fallback !
 			return fetch(request, { headers: event.data.options.headers || {}}).then((response) => {
 				if(response.status == 200) {
-					let clonedResp = response.clone();
-					CACHE_PUT_TO_SW(cache, request, clonedResp);
+					CACHE_PUT_TO_SW(cache, request, response.clone());
 				}
 				return response;
 			});
@@ -123,10 +123,10 @@ const CUSTOM_PUT = (event) => {
 
 	let request = new Request(event.data.url, event.data.options);
 	
-	let modifiedHeaders = new Headers([...event.data.options.headers, ['from-sw', true]]);
+	let modifiedHeaders = buildCustomHeaders(event.data.options.headers);
 
 	// event.data.payload --> Payload to push to cache, sent from client
-	let response = new Response(event.data.payload, { status: 200, statusText: 'ok', headers: modifiedHeaders}); // blob
+	let response = new Response(event.data.payload, { status: 200, statusText: 'ok', headers: modifiedHeaders }); // blob
 
 	caches.open(API_CACHE_NAME).then((cache) => {
 		cache.put(request, response);
@@ -137,8 +137,10 @@ const CUSTOM_PUT = (event) => {
 	});
 };
 
+const buildCustomHeaders = ( headers ) => new Headers([...headers, ['from-sw', true]]);
+
 const CACHE_PUT_TO_SW = (cache, request, response) => {
-	let modifiedHeaders = new Headers([...response.headers, ['from-sw', true]]);
+	let modifiedHeaders = buildCustomHeaders(response.headers);
 	let updatedResponse = new Response(response.body, {headers: modifiedHeaders});
 
 	console.log(`SW::cachePutToSW:: triggered cache Put with modified headers => updatedResponse :${updatedResponse}`);
